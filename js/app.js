@@ -68,7 +68,7 @@ function filledCount() {
   return state.drawnSlots.filter(Boolean).length;
 }
 
-const ASSET_V = '16';
+const ASSET_V = '17';
 function assetUrl(path) {
   if (!path) return path;
   return path + (path.includes('?') ? '&' : '?') + 'v=' + ASSET_V;
@@ -161,10 +161,7 @@ function enterDrawFromMode() {
   state.drawnSlots = Array.from({ length: state.count }, () => null);
   state.remainingFan = shuffleArray(DECK.map((c) => c.id));
   state.fanCenter = Math.floor(state.remainingFan.length / 2);
-  const layoutEl = document.querySelector('.draw-layout');
-  if (layoutEl) layoutEl.classList.remove('is-reveal');
-  const drawScreenEnter = document.querySelector('.screen[data-screen="draw"]');
-  if (drawScreenEnter) drawScreenEnter.classList.remove('is-reveal-mode');
+  clearRevealUi();
   renderDrawStage(true);
   showScreen('draw');
 }
@@ -176,16 +173,34 @@ function initMode() {
 }
 
 /* ——— Draw ——— */
+function clearRevealUi() {
+  const board = $('#spread-board');
+  if (board) {
+    board.innerHTML = '';
+    board.style.display = 'none';
+  }
+  const layoutEl = document.querySelector('.draw-layout');
+  if (layoutEl) layoutEl.classList.remove('is-reveal');
+  const drawScreen = document.querySelector('.screen[data-screen="draw"]');
+  if (drawScreen) drawScreen.classList.remove('is-reveal-mode');
+  const bar = $('#reveal-bar');
+  if (bar) bar.style.display = 'none';
+}
+
 function renderDrawStage(withShuffleAnim) {
   const title = $('#draw-title');
   if (title) title.textContent = state.spread.name;
 
-  $('#reveal-bar').style.display = 'none';
   $('#fan-stage').style.display = '';
   $('#draw-mid').style.display = '';
-  // 抽牌过程不展示牌面：只显示进度与扇面
+  // 抽牌过程不展示牌面：只显示进度与扇面；先清空旧结果防闪现
   const board = $('#spread-board');
-  if (board) board.style.display = 'none';
+  if (board) {
+    board.innerHTML = '';
+    board.style.display = 'none';
+  }
+  const bar = $('#reveal-bar');
+  if (bar) bar.style.display = 'none';
 
   updateDrawMid();
   renderFan(withShuffleAnim);
@@ -209,7 +224,6 @@ function updateDrawMid() {
     if (layoutEl) layoutEl.classList.add('is-reveal');
     const drawScreen = document.querySelector('.screen[data-screen="draw"]');
     if (drawScreen) drawScreen.classList.add('is-reveal-mode');
-    if (board) board.style.display = 'flex';
     renderBoard();
     $('#reveal-bar').style.display = 'flex';
     updateRevealBar();
@@ -306,7 +320,8 @@ function renderBoard() {
     board.innerHTML = '';
     return;
   }
-  board.style.display = 'flex';
+  // 先在隐藏状态下组装，避免旧结果闪一帧
+  board.style.display = 'none';
 
   const layout = state.spread.layout;
   const slots = document.createElement('div');
@@ -360,6 +375,7 @@ function renderBoard() {
 
   board.innerHTML = '';
   board.appendChild(slots);
+  board.style.display = 'flex';
 }
 
 function onSlotCardTap(index) {
@@ -618,6 +634,8 @@ function updateRevealBar() {
 function initDraw() {
   $('#btn-draw-back').addEventListener('click', () => {
     closeSheet();
+    clearRevealUi();
+    state.drawnSlots = [];
     renderMode();
     showScreen('mode');
   });
@@ -625,6 +643,8 @@ function initDraw() {
   $('#btn-flip-all').addEventListener('click', flipAll);
   $('#btn-again').addEventListener('click', () => {
     closeSheet();
+    clearRevealUi();
+    state.drawnSlots = [];
     renderMode();
     showScreen('mode');
   });
