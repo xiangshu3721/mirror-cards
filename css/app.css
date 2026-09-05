@@ -89,6 +89,16 @@ input:focus-visible {
   padding-bottom: 0;
 }
 
+/* 手机多张展阵：屏幕本身可滚，避免父级 overflow:hidden 把牌阵裁没 */
+.screen[data-screen="draw"].active.is-reveal-mode {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  height: auto;
+  max-height: none;
+  min-height: 100dvh;
+  padding-bottom: calc(24px + var(--safe-b));
+}
+
 /* —— Topbar —— */
 .topbar {
   position: sticky;
@@ -533,18 +543,21 @@ input:focus-visible {
 }
 
 .draw-layout.is-reveal {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: visible;
   justify-content: flex-start;
-  padding-bottom: calc(88px + var(--safe-b));
+  flex: 1 0 auto;
+  min-height: auto;
+  padding-bottom: calc(96px + var(--safe-b));
 }
 
 .draw-layout.is-reveal .spread-board {
-  display: flex;
+  display: flex !important;
   flex: 0 0 auto;
-  min-height: auto;
+  width: 100%;
+  min-height: 40vh;
   padding-top: 12px;
   padding-bottom: 16px;
+  justify-content: flex-start;
 }
 
 .draw-layout.is-reveal .fan-stage,
@@ -555,8 +568,9 @@ input:focus-visible {
 .draw-layout.is-reveal .reveal-bar {
   position: sticky;
   bottom: 0;
-  margin-top: 8px;
+  margin-top: 16px;
   flex: 0 0 auto;
+  z-index: 30;
   padding-bottom: calc(12px + var(--safe-b));
   background: linear-gradient(180deg, transparent, var(--bg) 28%);
   z-index: 5;
@@ -717,9 +731,12 @@ input:focus-visible {
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
   transition: transform 0.95s cubic-bezier(0.22, 0.61, 0.36, 1);
   border-radius: var(--r-md);
   will-change: transform;
+  /* 避免 iOS 在 overflow 祖先下 3D 牌面「消失」 */
+  transform: translateZ(0);
 }
 
 .card.flipped .card-inner {
@@ -738,6 +755,8 @@ input:focus-visible {
   border-radius: var(--r-md);
   overflow: hidden;
   box-shadow: 0 8px 26px #00000073;
+  -webkit-transform: translateZ(0.1px);
+  transform: translateZ(0.1px);
 }
 
 .card-back-face {
@@ -754,7 +773,8 @@ input:focus-visible {
 }
 
 .card-front-face {
-  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg) translateZ(0.1px);
+  transform: rotateY(180deg) translateZ(0.1px);
   border: 1px solid #e9e3d724;
   background: var(--bg-4);
   display: flex;
@@ -1229,3 +1249,28 @@ input:focus-visible {
   .fan-stage.entering .fan-track { animation: none; }
   .sheet { transition: none; }
 }
+
+@media (max-width: 640px) {
+  .screen[data-screen="draw"].active.is-reveal-mode .slots {
+    width: 100%;
+  }
+  .slots.layout-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 8px;
+  }
+  .slots.layout-row .slot,
+  .slots.layout-triangle .slot {
+    max-width: none;
+  }
+  .slots.layout-cross .slot,
+  .slots.layout-grid3 .slot {
+    max-width: none;
+  }
+  .slots.layout-grid3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .card {
+    min-height: 120px;
+  }
+}
+

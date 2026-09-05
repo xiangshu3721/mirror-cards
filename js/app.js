@@ -68,7 +68,7 @@ function filledCount() {
   return state.drawnSlots.filter(Boolean).length;
 }
 
-const ASSET_V = '15';
+const ASSET_V = '16';
 function assetUrl(path) {
   if (!path) return path;
   return path + (path.includes('?') ? '&' : '?') + 'v=' + ASSET_V;
@@ -163,6 +163,8 @@ function enterDrawFromMode() {
   state.fanCenter = Math.floor(state.remainingFan.length / 2);
   const layoutEl = document.querySelector('.draw-layout');
   if (layoutEl) layoutEl.classList.remove('is-reveal');
+  const drawScreenEnter = document.querySelector('.screen[data-screen="draw"]');
+  if (drawScreenEnter) drawScreenEnter.classList.remove('is-reveal-mode');
   renderDrawStage(true);
   showScreen('draw');
 }
@@ -200,20 +202,24 @@ function updateDrawMid() {
   const board = $('#spread-board');
 
   if (next < 0) {
-    // 抽完：收起扇面，统一展示完整牌阵（全部背面，手翻）
+    // 抽完：立刻展阵（背面），不要等图片预热——手机/弱网会整屏空白
     mid.style.display = 'none';
     $('#fan-stage').style.display = 'none';
     const layoutEl = document.querySelector('.draw-layout');
     if (layoutEl) layoutEl.classList.add('is-reveal');
-    if (board) {
-      board.style.display = 'flex';
-    }
-    // 先预热全部牌图，再渲染，避免末张空白/数字占位
+    const drawScreen = document.querySelector('.screen[data-screen="draw"]');
+    if (drawScreen) drawScreen.classList.add('is-reveal-mode');
+    if (board) board.style.display = 'flex';
+    renderBoard();
+    $('#reveal-bar').style.display = 'flex';
+    updateRevealBar();
+    // 后台预热正面图，不阻塞展阵
     const cards = state.drawnSlots.filter(Boolean).map((s) => s.card);
-    Promise.all(cards.map((c) => probeImage(c))).finally(() => {
-      renderBoard();
-      $('#reveal-bar').style.display = 'flex';
-      updateRevealBar();
+    Promise.all(cards.map((c) => probeImage(c))).catch(() => {});
+    // 滚到牌阵顶部，避免手机上卡在空白区
+    requestAnimationFrame(() => {
+      if (layoutEl) layoutEl.scrollTop = 0;
+      if (drawScreen) drawScreen.scrollTop = 0;
     });
     return;
   }
@@ -223,6 +229,8 @@ function updateDrawMid() {
   $('#reveal-bar').style.display = 'none';
   const layoutEl = document.querySelector('.draw-layout');
   if (layoutEl) layoutEl.classList.remove('is-reveal');
+  const drawScreen = document.querySelector('.screen[data-screen="draw"]');
+  if (drawScreen) drawScreen.classList.remove('is-reveal-mode');
   if (board) board.style.display = 'none';
 
   segs.innerHTML = '';
