@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#12161d" />
+  <meta name="description" content="镜像卡牌 — 照镜子式深度觉察。抽 1 / 3 / 5 / 9 / 任意张，静心翻开。" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>镜像神通卡 · 深度觉察</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div class="app" id="app">
+
+    <!-- 1. Home -->
+    <section class="screen home active" data-screen="home" aria-label="首页">
+      <div class="home-glow" aria-hidden="true"></div>
+      <div class="home-fan" aria-hidden="true">
+        <div class="fan-card"></div>
+        <div class="fan-card"></div>
+        <div class="fan-card"></div>
+        <div class="fan-card"></div>
+        <div class="fan-card"></div>
+      </div>
+      <p class="home-kicker">深度觉察</p>
+      <h1 class="home-title">镜像神通卡</h1>
+      <p class="home-sub">照镜子式的深度觉察</p>
+      <p class="home-desc">这副牌不给你答案。<br />它只给你一面镜子——你看见的，是你自己。</p>
+      <div class="home-actions">
+        <button type="button" class="btn btn-primary btn-block" id="btn-start">开始抽牌</button>
+        <button type="button" class="btn btn-plain" id="btn-about">了解牌阵</button>
+      </div>
+      <div class="home-scroll-hint">静心 · 翻开</div>
+    </section>
+
+    <!-- About / spreads info -->
+    <section class="screen" data-screen="about" aria-label="了解牌阵">
+      <header class="topbar">
+        <button type="button" class="nav-btn" id="btn-about-back">← 返回</button>
+        <div class="title">牌阵</div>
+        <button type="button" class="nav-btn" style="visibility:hidden">·</button>
+      </header>
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="serif">怎么走？</h2>
+          <p>选张数，直接进入抽牌。图是门，走哪扇都行。</p>
+        </div>
+        <div class="about-block">
+          <h3>单张凝视 · 1</h3>
+          <p>抽一张，慢慢看。不急着解释，先只是凝视。</p>
+        </div>
+        <div class="about-block">
+          <h3>时间轴 · 3</h3>
+          <p>来处 · 今处 · 往处。也可选用镜像三角：看见 · 感受 · 行动。</p>
+        </div>
+        <div class="about-block">
+          <h3>十字简阵 · 5</h3>
+          <p>中心是此刻，四方是拉力与资源：上／下／左／右。</p>
+        </div>
+        <div class="about-block">
+          <h3>九宫格 · 9</h3>
+          <p>九格如镜阵，从角落到中心，慢慢扫过自己。</p>
+        </div>
+        <div class="about-block">
+          <h3>自定义 · 1–69</h3>
+          <p>任意张数：少量用扇形，较多用网格自动铺陈。</p>
+        </div>
+        <div class="about-block">
+          <h3>边界</h3>
+          <p>它是一面镜子，不是医生，也不是占卜。意思永远由你自己说出来。</p>
+        </div>
+        <div class="mode-footer">
+          <button type="button" class="btn btn-primary" id="btn-about-start">开始抽牌</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Mode / count -->
+    <section class="screen" data-screen="mode" aria-label="选择张数">
+      <header class="topbar">
+        <button type="button" class="nav-btn" id="btn-mode-back">← 返回</button>
+        <div class="title">镜像神通卡</div>
+        <button type="button" class="nav-btn" style="visibility:hidden">·</button>
+      </header>
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="serif">今天想抽几张？</h2>
+          <p>第一次来，可以从单张开始。</p>
+        </div>
+        <div class="mode-grid" id="mode-grid"></div>
+        <div class="custom-row" id="custom-row">
+          <input
+            type="number"
+            id="custom-count"
+            min="1"
+            max="69"
+            inputmode="numeric"
+            placeholder="输入 1–69"
+            aria-label="自定义张数"
+          />
+        </div>
+        <div class="mode-footer">
+          <button type="button" class="btn btn-primary" id="btn-mode-next" disabled>进入抽牌</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Spread picker (dormant — skipped in flow) -->
+    <section class="screen" data-screen="spread" aria-label="选择牌阵" hidden>
+      <header class="topbar">
+        <button type="button" class="nav-btn" id="btn-spread-back">← 返回</button>
+        <div class="title">牌阵</div>
+        <button type="button" class="nav-btn" style="visibility:hidden">·</button>
+      </header>
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="serif">选一个牌阵</h2>
+          <p>当前 <span id="spread-head-count">1</span> 张 · 点选后进入抽牌</p>
+        </div>
+        <div class="spread-list" id="spread-list"></div>
+        <div class="mode-footer">
+          <button type="button" class="btn btn-primary" id="btn-spread-next" disabled>进入抽牌</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4–6. Draw / Reveal -->
+    <section class="screen" data-screen="draw" aria-label="抽牌">
+      <header class="topbar">
+        <button type="button" class="nav-btn" id="btn-draw-back">← 上一步</button>
+        <div class="title" id="draw-title">抽牌</div>
+        <button type="button" class="nav-btn" style="visibility:hidden">·</button>
+      </header>
+
+      <div class="draw-layout">
+        <!-- Top: empty / filled position slots -->
+        <div class="spread-board" id="spread-board" aria-live="polite"></div>
+
+        <!-- Mid: progress + next-position prompt (while drawing) -->
+        <div class="draw-mid" id="draw-mid">
+          <div class="progress-segs" id="progress-segs" aria-hidden="true"></div>
+          <h2 class="draw-prompt" id="draw-prompt"></h2>
+          <p class="draw-prompt-hint" id="draw-prompt-hint"></p>
+          <p class="draw-swipe-hint" id="draw-swipe-hint">左右滑动转牌 · 点一张选它</p>
+          <button type="button" class="link-auto" id="btn-auto-pick">替我抽一张</button>
+        </div>
+
+        <!-- Bottom: arc fan of remaining face-down cards -->
+        <div class="fan-stage" id="fan-stage">
+          <div class="fan-glow" aria-hidden="true"></div>
+          <div class="fan-track" id="fan-track" role="listbox" aria-label="待抽卡牌"></div>
+        </div>
+
+        <!-- After all filled -->
+        <div class="reveal-bar" id="reveal-bar" style="display:none">
+          <button type="button" class="btn btn-ghost" id="btn-flip-all">全部翻开</button>
+          <button type="button" class="btn btn-primary" id="btn-again">再抽一次</button>
+        </div>
+      </div>
+    </section>
+
+    <p class="footer-note" style="display:none">镜像卡 · 仅用于自我觉察，非医疗诊断</p>
+  </div>
+
+  <!-- Detail bottom sheet -->
+  <div class="sheet-backdrop" id="sheet-backdrop"></div>
+  <aside class="sheet" id="detail-sheet" aria-hidden="true" role="dialog" aria-labelledby="sheet-name">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="sheet-body">
+      <div class="sheet-card-preview">
+        <div class="sheet-mini" id="sheet-mini"></div>
+        <div class="sheet-meta">
+          <div class="pos" id="sheet-pos"></div>
+          <h3 id="sheet-name">镜像 · 01</h3>
+          <p class="prompt" id="sheet-prompt"></p>
+        </div>
+      </div>
+      <div class="layers" id="sheet-layers"></div>
+      <div class="sheet-actions">
+        <button type="button" class="btn btn-ghost" id="btn-sheet-close">关闭</button>
+      </div>
+    </div>
+  </aside>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
