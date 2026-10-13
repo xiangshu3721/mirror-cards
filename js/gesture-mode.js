@@ -429,7 +429,8 @@ function updateDepth() {
     const far = ad > limit;
     el.classList.toggle('is-far', far);
     el.classList.toggle('is-side', !far && ad > 18);
-    el.style.visibility = far ? 'hidden' : 'visible';
+    // 不写 inline visibility:visible，否则会穿透父级的隐藏（翻牌时转环必须整体消失）
+    el.style.removeProperty('visibility');
   });
 }
 
