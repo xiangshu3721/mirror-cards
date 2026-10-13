@@ -42,7 +42,7 @@ const HUD = {
   [PHASE.COMPLETE]: '牌阵已满 · 点卡翻开细看，或再抽一次',
 };
 
-const ASSET_V = '21';
+const ASSET_V = '22';
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 

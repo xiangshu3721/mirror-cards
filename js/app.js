@@ -69,7 +69,7 @@ function filledCount() {
   return state.drawnSlots.filter(Boolean).length;
 }
 
-const ASSET_V = '21';
+const ASSET_V = '22';
 function assetUrl(path) {
   if (!path) return path;
   return path + (path.includes('?') ? '&' : '?') + 'v=' + ASSET_V;

@@ -604,9 +604,13 @@ input:focus-visible {
   margin: 0 auto;
 }
 
+/* 三张时间轴：居中一簇，不要拉满整行。单张 / 十字不走这条。 */
 .slots.layout-row {
-  grid-template-columns: repeat(3, 1fr);
-  max-width: 100%;
+  width: min(72%, 300px);
+  max-width: 300px;
+  margin-inline: auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 6px;
 }
 
 .slots.layout-triangle {
@@ -1254,9 +1258,15 @@ input:focus-visible {
   .screen[data-screen="draw"].active.is-reveal-mode .slots {
     width: 100%;
   }
+  /* 盖过上面的 width:100%，只收紧三张横排 */
+  .screen[data-screen="draw"].active.is-reveal-mode .slots.layout-row,
+  .gesture-reveal-board .slots.layout-row,
   .slots.layout-row {
+    width: min(72%, 300px);
+    max-width: 300px;
+    margin-inline: auto;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px 8px;
+    gap: 8px 6px;
   }
   .slots.layout-row .slot,
   .slots.layout-triangle .slot {
