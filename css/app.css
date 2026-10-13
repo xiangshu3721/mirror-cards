@@ -628,7 +628,7 @@ input:focus-visible {
   margin: 0 auto;
 }
 
-/* order: center, north, south, west, east — remapped via grid areas */
+/* 抽牌顺序：中心、上方、左方、右方、下方。视觉按方位落在十字上 */
 .slots.layout-cross .slot[data-key="north"] { grid-column: 2; grid-row: 1; }
 .slots.layout-cross .slot[data-key="west"]  { grid-column: 1; grid-row: 2; }
 .slots.layout-cross .slot[data-key="center"]{ grid-column: 2; grid-row: 2; }

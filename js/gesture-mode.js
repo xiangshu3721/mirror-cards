@@ -42,7 +42,7 @@ const HUD = {
   [PHASE.COMPLETE]: '牌阵已满 · 点卡翻开细看，或再抽一次',
 };
 
-const ASSET_V = '20';
+const ASSET_V = '21';
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
@@ -93,6 +93,7 @@ const gState = {
   engine: null,
   spinAngle: 0,
   radius: 260,
+  cardW: 200,
   velocity: 0,
   friction: 0.92,
   animating: false,
@@ -230,9 +231,38 @@ function buildRingIds() {
 }
 
 function readCardWidth() {
-  const host = document.querySelector('.gesture-play') || document.documentElement;
-  const raw = parseFloat(getComputedStyle(host).getPropertyValue('--g-card-w'));
-  return Number.isFinite(raw) && raw > 40 ? raw : 220;
+  return gState.cardW > 40 ? gState.cardW : 200;
+}
+
+/**
+ * 按舞台实宽实高算牌尺寸，保证整张牌落在顶栏和底栏之间，四边留白。
+ */
+function fitStageMetrics() {
+  const stage = document.getElementById('gesture-stage');
+  if (!stage) return;
+  const w = stage.clientWidth;
+  const h = stage.clientHeight;
+  if (w < 80 || h < 120) return;
+  const ratio = 1053 / 1400;
+  const fit = (maxW, maxH) => {
+    let height = Math.max(96, maxH);
+    let width = height * ratio;
+    if (width > maxW) {
+      width = maxW;
+      height = width / ratio;
+    }
+    return { width, height };
+  };
+  const stack = fit(w - 36, h - 56);
+  const card = fit(w - 72, h - 48);
+  const flip = fit(w - 40, h - 28 - 96);
+  stage.style.setProperty('--g-stack-w', `${stack.width}px`);
+  stage.style.setProperty('--g-stack-h', `${stack.height}px`);
+  stage.style.setProperty('--g-card-w', `${card.width}px`);
+  stage.style.setProperty('--g-card-h', `${card.height}px`);
+  stage.style.setProperty('--g-flip-w', `${flip.width}px`);
+  stage.style.setProperty('--g-flip-h', `${flip.height}px`);
+  gState.cardW = card.width;
 }
 
 /** 半径让左右邻卡露出一截，正中牌保持 CSS 尺寸（父级会把圆柱拉回 z=0） */
@@ -299,13 +329,14 @@ function renderDrawnStrip() {
 function renderStack() {
   const stack = $('#gesture-stack');
   if (!stack) return;
+  fitStageMetrics();
   stack.hidden = false;
   stack.innerHTML = '';
   const n = 7;
   for (let i = 0; i < n; i++) {
     const el = document.createElement('div');
     el.className = 'gesture-stack-card';
-    el.style.transform = `translate(${i * 2.4}px, ${-i * 3.4}px) rotate(${(i - 3) * 1.1}deg)`;
+    el.style.transform = `translate(${(i - 3) * 1.2}px, ${(3 - i) * 1.1}px) rotate(${(i - 3) * 0.55}deg)`;
     el.style.zIndex = String(i);
     stack.appendChild(el);
   }
@@ -337,6 +368,7 @@ function renderRing() {
   if (!ring) return;
   if (stack) stack.hidden = true;
   ring.innerHTML = '';
+  fitStageMetrics();
   syncCarouselMetrics();
   const n = gState.ringIds.length;
   gState.spinAngle = 0;
@@ -496,7 +528,7 @@ function lockFront() {
   if (cards[idx]) {
     cards[idx].classList.add('is-locked');
     cards[idx].style.transition = 'transform 0.35s ease';
-    cards[idx].style.transform = cardTransform(idx, 48, 1.06);
+    cards[idx].style.transform = cardTransform(idx, 28, 1.03);
   }
   updateDepth();
   setPhase(PHASE.LOCKED);
@@ -538,10 +570,12 @@ function waitForImages(root) {
 
 function placeFlipOverlay() {
   const ov = $('#gesture-flip-overlay');
-  const head = $('#gesture-play-head');
-  if (!ov || !head) return;
-  const bottom = head.getBoundingClientRect().bottom;
-  ov.style.top = `${Math.max(0, Math.round(bottom + 4))}px`;
+  if (!ov) return;
+  fitStageMetrics();
+  ov.style.top = '';
+  ov.style.bottom = '';
+  ov.style.left = '';
+  ov.style.right = '';
 }
 
 function blockFits(el, container, pad = 2) {
@@ -715,6 +749,7 @@ function renderGestureReveal() {
     const item = gState.drawnSlots[i];
     const slot = document.createElement('div');
     slot.className = 'slot' + (item ? '' : ' is-empty');
+    slot.dataset.key = pos.key;
     const label = document.createElement('div');
     label.className = 'slot-label';
     label.textContent = pos.label;
@@ -1021,18 +1056,26 @@ export function initGestureMode(helpers) {
   $('#gesture-btn-to-normal')?.addEventListener('click', leaveToHome);
 
   initRingDrag();
-  window.addEventListener('resize', () => {
-    if (gState.phase === PHASE.FLIPPING) placeFlipOverlay();
-    if (gState.phase === PHASE.SPREAD || gState.phase === PHASE.LOCKED) {
-      syncCarouselMetrics();
-      $$('.gesture-ring-card').forEach((c, i) => {
-        const locked = c.classList.contains('is-locked');
-        c.style.transition = 'none';
-        c.style.transform = cardTransform(i, locked ? 48 : 0, locked ? 1.06 : 1);
-      });
-      updateSpin();
+  const stageEl = document.getElementById('gesture-stage');
+  if (stageEl && !stageEl.dataset.fitBound) {
+    stageEl.dataset.fitBound = '1';
+    const refit = () => {
+      fitStageMetrics();
+      if (gState.phase === PHASE.SPREAD || gState.phase === PHASE.LOCKED) {
+        syncCarouselMetrics();
+        $$('.gesture-ring-card').forEach((c, i) => {
+          const locked = c.classList.contains('is-locked');
+          c.style.transition = 'none';
+          c.style.transform = cardTransform(i, locked ? 36 : 0, locked ? 1.03 : 1);
+        });
+        updateSpin();
+      }
+    };
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(refit).observe(stageEl);
     }
-  });
+    window.addEventListener('resize', refit);
+  }
 
   // URL 直达
   const params = new URLSearchParams(location.search);

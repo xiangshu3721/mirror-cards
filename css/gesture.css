@@ -170,13 +170,9 @@ body:has(.screen[data-screen="gesture"].active) {
   max-width: 280px;
 }
 
-/* Play stage — 全屏仪式，顶部缩略图固定可见 */
+/* Play stage — 顶栏与底栏之间的舞台，牌必须完整落在舞台内 */
 .gesture-play {
   padding-bottom: calc(8px + var(--safe-b));
-  --g-stack-h: clamp(260px, 50vh, 480px);
-  --g-stack-w: calc(var(--g-stack-h) * 0.752);
-  --g-card-h: clamp(220px, 42vh, 380px);
-  --g-card-w: calc(var(--g-card-h) * 0.752);
 }
 
 .gesture-play-head {
@@ -184,7 +180,8 @@ body:has(.screen[data-screen="gesture"].active) {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  margin-bottom: 2px;
+  margin-bottom: 0;
+  padding-bottom: 8px;
   flex-shrink: 0;
   z-index: 8;
   position: relative;
@@ -286,9 +283,11 @@ body:has(.screen[data-screen="gesture"].active) {
 }
 .gesture-pos-label {
   font-size: 13px;
+  line-height: 1.35;
   color: var(--accent);
   font-family: var(--serif);
   letter-spacing: 0.08em;
+  padding: 0 8px;
 }
 
 .gesture-stage {
@@ -298,7 +297,8 @@ body:has(.screen[data-screen="gesture"].active) {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: visible;
+  overflow: hidden;
+  z-index: 1;
 }
 .gesture-stage.is-complete {
   display: none;
@@ -324,15 +324,15 @@ body:has(.screen[data-screen="gesture"].active) {
 .gesture-ring-depth,
 .gesture-ring {
   position: absolute;
-  left: 50%;
-  top: 46%;
-  width: var(--g-card-w);
-  height: var(--g-card-h);
   transform-style: preserve-3d;
 }
 .gesture-ring-depth {
-  margin-left: calc(var(--g-card-w) / -2);
-  margin-top: calc(var(--g-card-h) / -2);
+  left: 50%;
+  top: 50%;
+  width: var(--g-card-w, 200px);
+  height: var(--g-card-h, 266px);
+  margin-left: calc(var(--g-card-w, 200px) / -2);
+  margin-top: calc(var(--g-card-h, 266px) / -2);
 }
 .gesture-ring {
   inset: 0;
@@ -403,15 +403,12 @@ body:has(.screen[data-screen="gesture"].active) {
 .gesture-stack {
   position: absolute;
   left: 50%;
-  top: 48%;
-  width: var(--g-stack-w);
-  height: var(--g-stack-h);
-  margin-left: calc(var(--g-stack-w) / -2);
-  margin-top: calc(var(--g-stack-h) / -2);
-  transform: rotateX(7deg);
-  transform-style: preserve-3d;
+  top: 50%;
+  width: var(--g-stack-w, 220px);
+  height: var(--g-stack-h, 292px);
+  margin-left: calc(var(--g-stack-w, 220px) / -2);
+  margin-top: calc(var(--g-stack-h, 292px) / -2);
   z-index: 3;
-  filter: drop-shadow(0 28px 36px rgba(0, 0, 0, 0.55));
 }
 .gesture-stack[hidden] {
   display: none !important;
@@ -517,21 +514,18 @@ body:has(.screen[data-screen="gesture"].active) {
   display: none !important;
 }
 
-/* Flip overlay — 盖住舞台，不盖住顶部已抽缩略图 */
+/* Flip overlay — 只占舞台，不盖顶栏，也不伸出底栏 */
 .gesture-flip-overlay {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: 148px;
+  position: absolute;
+  inset: 0;
   z-index: 20;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 12px 16px calc(16px + var(--safe-b));
-  overflow: auto;
+  gap: 10px;
+  padding: 16px 16px 12px;
+  overflow: hidden;
   background: #0c0e13;
   opacity: 0;
   pointer-events: none;
@@ -546,10 +540,13 @@ body:has(.screen[data-screen="gesture"].active) {
 }
 .gesture-flip-card {
   position: relative;
-  width: min(74vw, 320px, calc(52vh * 0.752));
-  aspect-ratio: 1053 / 1400;
+  width: var(--g-flip-w, 220px);
+  height: var(--g-flip-h, 292px);
+  max-width: calc(100% - 4px);
+  max-height: calc(100% - 84px);
   perspective: 1200px;
   flex: 0 0 auto;
+  min-height: 0;
 }
 .gesture-flip-inner {
   position: absolute;
@@ -672,10 +669,6 @@ body:has(.screen[data-screen="gesture"].active) {
 }
 
 @media (max-width: 380px) {
-  .gesture-play {
-    --g-stack-h: clamp(240px, 48vh, 420px);
-    --g-card-h: clamp(200px, 40vh, 320px);
-  }
   .gesture-drawn {
     gap: 8px;
     min-height: 96px;
@@ -690,15 +683,8 @@ body:has(.screen[data-screen="gesture"].active) {
 }
 
 @media (min-width: 900px) {
-  .gesture-play {
-    --g-stack-h: clamp(360px, 52vh, 560px);
-    --g-card-h: clamp(300px, 46vh, 460px);
-  }
   .gesture-drawn-thumb {
     width: 76px;
     height: 104px;
-  }
-  .gesture-flip-card {
-    width: min(34vw, 360px);
   }
 }
