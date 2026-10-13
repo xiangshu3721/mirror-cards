@@ -1258,9 +1258,8 @@ input:focus-visible {
   .screen[data-screen="draw"].active.is-reveal-mode .slots {
     width: 100%;
   }
-  /* 盖过上面的 width:100%，只收紧三张横排 */
+  /* 普通抽牌的三张横排仍收成一簇。手势满阵另在 gesture.css 里按舞台放大。 */
   .screen[data-screen="draw"].active.is-reveal-mode .slots.layout-row,
-  .gesture-reveal-board .slots.layout-row,
   .slots.layout-row {
     width: min(72%, 300px);
     max-width: 300px;

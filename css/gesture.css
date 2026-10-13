@@ -508,10 +508,32 @@ body:has(.screen[data-screen="gesture"].active) {
 }
 .gesture-root[data-phase="complete"] .gesture-complete-bar {
   display: flex;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
 }
 .gesture-root[data-phase="complete"] .gesture-hud,
 .gesture-root[data-phase="complete"] .gesture-fallback-bar {
   display: none !important;
+}
+/* 满阵后缩略图收成小条，舞台让给三张主牌 */
+.gesture-root[data-phase="complete"] .gesture-play {
+  padding-left: 0;
+  padding-right: 0;
+}
+.gesture-root[data-phase="complete"] .gesture-play-head {
+  gap: 4px;
+  padding: 0 var(--gutter) 2px;
+}
+.gesture-root[data-phase="complete"] .gesture-drawn {
+  min-height: 0;
+  gap: 8px;
+}
+.gesture-root[data-phase="complete"] .gesture-drawn-thumb {
+  width: 46px;
+  height: 62px;
+}
+.gesture-root[data-phase="complete"] .gesture-drawn-label {
+  max-width: 56px;
 }
 
 /* Flip overlay — 只占舞台，不盖顶栏，也不伸出底栏 */
@@ -631,24 +653,58 @@ body:has(.screen[data-screen="gesture"].active) {
   margin-top: 6px;
 }
 
-/* Reveal */
+/* Reveal — 缩略图之下、底栏之上的舞台；三张在这里放大并居中 */
 .gesture-reveal {
   display: none;
   flex: 1;
   flex-direction: column;
   min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 8px 0 12px;
+  overflow: hidden;
+  padding: 0;
 }
 .gesture-reveal.show {
   display: flex;
 }
 .gesture-reveal-board {
-  padding: 8px 4px 16px;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: safe center;
+  padding: 4px 10px 8px;
+  container-type: size;
+  overflow: auto;
 }
 .gesture-reveal-board .slots {
   margin: 0 auto;
+}
+/*
+ * 三张时间轴：按舞台高宽取能放下的最大牌，左右只留窄缝，整组垂直居中。
+ * 单张 / 十字不套这条，避免被一起拉大。
+ */
+.gesture-reveal-board .slots.layout-row {
+  --reveal-gap: 12px;
+  --reveal-label: 32px;
+  width: min(
+    100%,
+    calc((100cqh - var(--reveal-label) - 8px) * 1053 / 1400 * 3 + var(--reveal-gap) * 2)
+  );
+  max-width: none;
+  margin-inline: auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  justify-content: center;
+  gap: 6px var(--reveal-gap);
+}
+.gesture-reveal-board .slots.layout-row .slot {
+  width: 100%;
+  max-width: none;
+}
+.gesture-reveal-board .slots.layout-row .card {
+  width: 100%;
+  max-width: none;
+  min-height: 0;
 }
 
 /*
