@@ -3,3 +3,4 @@
 *.bak
 preview-*.png
 node_modules/
+shots/

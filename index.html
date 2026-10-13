@@ -4,11 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#12161d" />
-  <meta name="description" content="镜像卡牌 — 照镜子式深度觉察。抽 1 / 3 / 5 / 9 / 任意张，静心翻开。" />
+  <meta name="description" content="镜像神通卡 — 照镜子式深度觉察。抽 1 / 3 / 5 / 9 / 任意张，静心翻开。" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>镜像神通卡 · 深度觉察</title>
-  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/app.css?v=19" />
+  <link rel="stylesheet" href="css/gesture.css?v=19" />
 </head>
 <body>
   <div class="app" id="app">
@@ -29,6 +30,7 @@
       <p class="home-desc">这副牌不给你答案。<br />它只给你一面镜子——你看见的，是你自己。</p>
       <div class="home-actions">
         <button type="button" class="btn btn-primary btn-block" id="btn-start">开始抽牌</button>
+        <button type="button" class="btn btn-ghost btn-block" id="btn-gesture-start">手势抽牌</button>
         <button type="button" class="btn btn-plain" id="btn-about">了解牌阵</button>
       </div>
       <div class="home-scroll-hint">静心 · 翻开</div>
@@ -160,7 +162,91 @@
       </div>
     </section>
 
-    <p class="footer-note" style="display:none">镜像卡 · 仅用于自我觉察，非医疗诊断</p>
+
+    <!-- Gesture mode (independent) -->
+    <section class="screen" data-screen="gesture" aria-label="手势抽牌">
+      <div class="gesture-root" id="gesture-root" data-phase="welcome">
+        <header class="gesture-topbar">
+          <button type="button" class="nav-btn" id="gesture-btn-back">← 返回</button>
+          <div class="title">手势抽牌</div>
+          <span class="gesture-cam-badge" id="gesture-cam-badge" data-on="0">未开摄像头</span>
+        </header>
+
+        <!-- Welcome -->
+        <div class="gesture-panel gesture-welcome active" data-panel="welcome">
+          <p class="kicker">隔空觉察</p>
+          <h2 class="serif">手势仪式</h2>
+          <p class="desc">握拳召唤，张掌展环，挥手选牌，捏合翻开。<br />摄像头仅在本地识别，视频不会上传。</p>
+          <div class="gesture-count-row" role="group" aria-label="张数">
+            <button type="button" class="gesture-count-chip" data-count="1"><span>单张</span><span class="sub">凝视</span></button>
+            <button type="button" class="gesture-count-chip selected" data-count="3"><span>三张</span><span class="sub">来处·今处·往处</span></button>
+            <button type="button" class="gesture-count-chip" data-count="5"><span>五张</span><span class="sub">十字简阵</span></button>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn btn-primary btn-block" id="gesture-btn-open-cam">开启手势仪式</button>
+            <button type="button" class="btn btn-ghost btn-block" id="gesture-btn-touch-only">无摄像头 · 触屏拖环</button>
+          </div>
+          <p class="gesture-status" id="gesture-status"></p>
+          <ul class="gesture-hint-list">
+            <li>握拳 → 召唤牌堆</li>
+            <li>张掌 → 展开圆环</li>
+            <li>挥手／拖拽 → 转环（松手有惯性吸附）</li>
+            <li>食指 → 锁定前方卡 · 捏合翻开</li>
+            <li>无摄像头时按钮与拖拽可完整走完</li>
+          </ul>
+        </div>
+
+        <!-- Meditate -->
+        <div class="gesture-panel gesture-meditate" data-panel="meditate">
+          <h2 class="serif">默想一个问题</h2>
+          <p>不必急着找答案。把问题放在心里一会儿，再继续。</p>
+          <button type="button" class="btn btn-primary" id="gesture-btn-meditate-done">我已默念完毕</button>
+        </div>
+
+        <!-- Play -->
+        <div class="gesture-panel gesture-play" data-panel="play">
+          <div class="gesture-play-head">
+            <div class="gesture-progress" id="gesture-progress" hidden></div>
+            <div class="gesture-pos-label" id="gesture-pos-label" hidden></div>
+          </div>
+
+          <div class="gesture-stage" id="gesture-stage">
+            <div class="gesture-platform" aria-hidden="true"></div>
+            <div class="gesture-stack" id="gesture-stack" hidden></div>
+            <div class="gesture-ring-wrap" id="gesture-ring-wrap">
+              <div class="gesture-ring" id="gesture-ring"></div>
+            </div>
+            <div class="gesture-flip-overlay" id="gesture-flip-overlay" hidden></div>
+          </div>
+
+          <div class="gesture-reveal" id="gesture-reveal">
+            <div class="gesture-reveal-board" id="gesture-reveal-board"></div>
+          </div>
+
+          <p class="gesture-hud" id="gesture-hud">握拳召唤牌堆 · 或点「召唤」</p>
+
+          <div class="gesture-fallback-bar" id="gesture-fallback-bar" hidden>
+            <button type="button" class="btn btn-primary" id="gesture-btn-summon">召唤牌堆</button>
+            <button type="button" class="btn btn-primary" id="gesture-btn-expand" hidden>展开</button>
+            <button type="button" class="btn btn-primary" id="gesture-btn-flip" hidden>翻开</button>
+            <button type="button" class="btn btn-ghost" id="gesture-btn-unlock" hidden>取消锁定</button>
+            <button type="button" class="btn btn-primary" id="gesture-btn-continue" hidden>继续</button>
+          </div>
+
+          <div class="gesture-complete-bar">
+            <button type="button" class="btn btn-primary" id="gesture-btn-again">再抽一次</button>
+            <button type="button" class="btn btn-ghost" id="gesture-btn-to-normal">返回普通模式</button>
+          </div>
+        </div>
+
+        <div class="gesture-cam-panel" id="gesture-cam-panel">
+          <video id="gesture-video" playsinline muted autoplay></video>
+          <button type="button" class="cam-toggle" id="gesture-btn-cam-toggle">摄像头画面</button>
+        </div>
+      </div>
+    </section>
+
+    <p class="footer-note" style="display:none">镜像神通卡 · 仅用于自我觉察，非医疗诊断</p>
   </div>
 
   <!-- Detail bottom sheet -->
@@ -183,6 +269,6 @@
     </div>
   </aside>
 
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=19"></script>
 </body>
 </html>

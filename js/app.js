@@ -10,6 +10,7 @@ import {
   resolvePositions,
   REFLECTION_LAYERS,
 } from './spreads.js';
+import { initGestureMode } from './gesture-mode.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -68,7 +69,7 @@ function filledCount() {
   return state.drawnSlots.filter(Boolean).length;
 }
 
-const ASSET_V = '17';
+const ASSET_V = '19';
 function assetUrl(path) {
   if (!path) return path;
   return path + (path.includes('?') ? '&' : '?') + 'v=' + ASSET_V;
@@ -709,7 +710,12 @@ function boot() {
   initMode();
   initDraw();
   initSheet();
-  showScreen('home');
+  initGestureMode({ showScreen, closeSheet });
+  // ?mode=gesture 由 gesture-mode 自行切入；否则首页
+  const params = new URLSearchParams(location.search);
+  if (params.get('mode') !== 'gesture') {
+    showScreen('home');
+  }
 }
 
 boot();

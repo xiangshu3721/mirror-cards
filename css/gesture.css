@@ -1,0 +1,538 @@
+/* 手势抽牌模式 · 暗金埃及风 */
+
+.screen[data-screen="gesture"].active {
+  overflow: hidden;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding-bottom: 0;
+  position: relative;
+}
+
+.gesture-root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+
+.gesture-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px var(--gutter);
+  padding-top: calc(10px + var(--safe-t));
+  gap: 8px;
+  z-index: 5;
+}
+
+.gesture-topbar .title {
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.gesture-cam-badge {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  background: var(--accent-soft);
+  white-space: nowrap;
+}
+.gesture-cam-badge[data-on="1"] {
+  color: var(--accent);
+  border-color: var(--accent-2);
+}
+
+.gesture-panel {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 var(--gutter) calc(20px + var(--safe-b));
+}
+.gesture-panel.active {
+  display: flex;
+}
+
+/* Welcome */
+.gesture-welcome {
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  gap: 12px;
+}
+.gesture-welcome .kicker {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--accent-2);
+  text-transform: uppercase;
+}
+.gesture-welcome h2 {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.gesture-welcome .desc {
+  color: var(--ink-dim);
+  font-size: 14px;
+  max-width: 320px;
+  line-height: 1.7;
+}
+.gesture-count-row {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.gesture-count-chip {
+  min-width: 72px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--bg-3);
+  color: var(--ink-dim);
+  font-size: 13px;
+}
+.gesture-count-chip.selected {
+  border-color: var(--accent-2);
+  color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--accent-3);
+}
+.gesture-count-chip .sub {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin-top: 2px;
+}
+.gesture-welcome .actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(100%, 300px);
+  margin-top: 12px;
+}
+.gesture-status {
+  min-height: 1.4em;
+  font-size: 12px;
+  color: var(--ink-faint);
+  margin-top: 6px;
+}
+.gesture-hint-list {
+  text-align: left;
+  font-size: 12px;
+  color: var(--ink-dim);
+  line-height: 1.65;
+  max-width: 340px;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+}
+.gesture-hint-list li {
+  margin-left: 1.1em;
+  list-style: disc;
+}
+
+/* Meditate */
+.gesture-meditate {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+}
+.gesture-meditate h2 {
+  font-family: var(--serif);
+  font-size: 24px;
+  color: var(--ink);
+}
+.gesture-meditate p {
+  color: var(--ink-dim);
+  max-width: 280px;
+}
+
+/* Play stage */
+.gesture-play {
+  padding-bottom: calc(12px + var(--safe-b));
+}
+.gesture-play-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.gesture-progress {
+  display: flex;
+  gap: 6px;
+}
+.gesture-prog-seg {
+  width: 28px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-4);
+}
+.gesture-prog-seg.active {
+  background: var(--accent-2);
+}
+.gesture-prog-seg.done {
+  background: var(--accent);
+}
+.gesture-pos-label {
+  font-size: 13px;
+  color: var(--accent);
+  font-family: var(--serif);
+}
+
+.gesture-stage {
+  flex: 1;
+  min-height: 280px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 900px;
+  overflow: hidden;
+}
+.gesture-stage.is-complete {
+  display: none;
+}
+
+.gesture-ring-wrap {
+  width: 100%;
+  height: min(52vh, 420px);
+  position: relative;
+  transform-style: preserve-3d;
+  touch-action: none;
+  cursor: grab;
+}
+.gesture-ring-wrap:active {
+  cursor: grabbing;
+}
+.gesture-ring-wrap.dim {
+  opacity: 0.25;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+.gesture-ring {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  transform: rotateZ(0deg);
+  will-change: transform;
+}
+
+.gesture-ring-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 72px;
+  height: 96px;
+  margin: -48px -36px;
+  border: none;
+  padding: 0;
+  background: transparent;
+  transform-style: preserve-3d;
+  transition: filter 0.2s ease, box-shadow 0.2s ease;
+}
+.gesture-ring-card .gesture-ring-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px #00000066;
+  border: 1px solid var(--line);
+}
+.gesture-ring-card .gesture-ring-face.back {
+  width: 100%;
+  height: 100%;
+  background: #1a1510 url('../images/card-back.jpg') center / cover no-repeat;
+}
+.gesture-ring-card.is-front .gesture-ring-inner {
+  box-shadow: 0 0 0 1px var(--accent-2), 0 12px 28px #00000088;
+  filter: brightness(1.08);
+}
+.gesture-ring-card.is-locked {
+  z-index: 5;
+}
+.gesture-ring-card.is-locked .gesture-ring-inner {
+  box-shadow: 0 0 0 2px var(--accent), 0 0 24px #d4af7888, 0 16px 32px #000000aa;
+  transform: scale(1.08);
+}
+
+.gesture-stack {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 90px;
+  height: 120px;
+  margin: -60px -45px;
+  transform-style: preserve-3d;
+}
+.gesture-stack-card {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: #1a1510 url('../images/card-back.jpg') center / cover no-repeat;
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 24px #00000077;
+}
+.gesture-stack.appear .gesture-stack-card {
+  animation: stack-in 0.55s ease both;
+}
+@keyframes stack-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.9); }
+  to { opacity: 1; }
+}
+
+.gesture-particles {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.gesture-particles span {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  animation: particle-fly 0.9s ease var(--delay) forwards;
+  box-shadow: 0 0 8px var(--accent);
+}
+@keyframes particle-fly {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); }
+}
+
+.gesture-platform {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  width: min(70%, 280px);
+  height: 18px;
+  margin-left: -min(35%, 140px);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #d4af7844 0%, transparent 70%);
+  box-shadow: 0 0 40px #c9a26b33;
+  pointer-events: none;
+}
+
+.gesture-hud {
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink);
+  padding: 8px 12px;
+  min-height: 2.4em;
+  letter-spacing: 0.02em;
+}
+.gesture-hud::before {
+  content: '◇ ';
+  color: var(--accent-2);
+}
+
+.gesture-fallback-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  padding: 4px 0 8px;
+}
+.gesture-fallback-bar[hidden] {
+  display: none !important;
+}
+.gesture-fallback-bar .btn {
+  min-width: 96px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.gesture-complete-bar {
+  display: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+.gesture-root[data-phase="complete"] .gesture-complete-bar {
+  display: flex;
+}
+.gesture-root[data-phase="complete"] .gesture-play-head,
+.gesture-root[data-phase="complete"] .gesture-hud,
+.gesture-root[data-phase="complete"] .gesture-fallback-bar {
+  display: none !important;
+}
+
+/* Flip overlay */
+.gesture-flip-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #12161dcc;
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.gesture-flip-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.gesture-flip-card {
+  width: 160px;
+  height: 213px;
+  perspective: 1000px;
+}
+.gesture-flip-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.7s ease;
+}
+.gesture-flip-inner.flipped {
+  transform: rotateY(180deg);
+}
+.gesture-flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 40px #00000099;
+}
+.gesture-flip-face.back {
+  background: #1a1510 url('../images/card-back.jpg') center / cover no-repeat;
+}
+.gesture-flip-face.front {
+  transform: rotateY(180deg);
+  background: var(--bg-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gesture-flip-face.front img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.gesture-flip-num {
+  position: absolute;
+  font-family: var(--serif);
+  font-size: 28px;
+  color: var(--accent);
+  text-shadow: 0 0 12px #d4af7888;
+}
+.gesture-flip-meta {
+  text-align: center;
+  max-width: 280px;
+}
+.gesture-flip-meta .name {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--accent);
+}
+.gesture-flip-meta .prompt {
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin-top: 4px;
+}
+
+/* Reveal */
+.gesture-reveal {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 0 12px;
+}
+.gesture-reveal.show {
+  display: flex;
+}
+.gesture-reveal-board {
+  padding: 8px 4px 16px;
+}
+.gesture-reveal-board .slots {
+  margin: 0 auto;
+}
+
+/* Camera PIP */
+.gesture-cam-panel {
+  position: absolute;
+  right: 12px;
+  bottom: calc(88px + var(--safe-b));
+  width: 112px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #000;
+  z-index: 15;
+  box-shadow: 0 8px 24px #00000088;
+  display: none;
+}
+.gesture-cam-panel.show {
+  display: block;
+}
+.gesture-cam-panel.collapsed {
+  height: 28px;
+}
+.gesture-cam-panel.collapsed video {
+  display: none;
+}
+.gesture-cam-panel video {
+  width: 100%;
+  height: 84px;
+  object-fit: cover;
+  transform: scaleX(-1);
+  display: block;
+}
+.gesture-cam-panel .cam-toggle {
+  display: block;
+  width: 100%;
+  padding: 4px;
+  font-size: 11px;
+  color: var(--ink-dim);
+  background: var(--bg-3);
+  text-align: center;
+}
+
+@media (max-width: 380px) {
+  .gesture-ring-card {
+    width: 60px;
+    height: 80px;
+    margin: -40px -30px;
+  }
+  .gesture-welcome h2 { font-size: 24px; }
+}
+
+@media (min-width: 900px) {
+  .gesture-ring-card {
+    width: 84px;
+    height: 112px;
+    margin: -56px -42px;
+  }
+}
