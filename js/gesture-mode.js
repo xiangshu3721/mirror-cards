@@ -1,6 +1,8 @@
 /**
  * 手势抽牌独立模式
- * 握拳召唤 → 张掌展开圆环 → 挥手/拖拽转环 → 食指锁定 → 捏合翻牌 → 入槽
+ * 握拳召唤 → 张掌展开居中转环 → 挥手/拖拽转牌 → 食指锁定 → 捏合翻牌 → 入槽
+ * 版式对齐参考站：中央大牌堆、封面流转环（主卡居中、左右邻卡），不用 360° 小圆环。
+ * 摄像头流只在后台给 MediaPipe，页面不出现预览小窗。
  * 无摄像头时完整按钮/拖拽兜底。
  */
 import { DECK, DECK_SIZE } from './deck.js';
@@ -33,14 +35,14 @@ const HUD = {
   [PHASE.MEDITATE]: '默想一个问题 · 准备好再继续',
   [PHASE.WAIT_FIST]: '握拳召唤牌堆 · 或点「召唤」',
   [PHASE.SUMMONED]: '张开手掌展开牌阵 · 或点「展开」',
-  [PHASE.SPREAD]: '左右挥手／拖拽转牌 · 食指点选前方卡',
+  [PHASE.SPREAD]: '左右挥手／拖拽转牌 · 食指点选正中卡',
   [PHASE.LOCKED]: '捏合确认翻开 · 张掌取消 · 或点按钮',
   [PHASE.FLIPPING]: '牌面翻转中…',
   [PHASE.WAIT_NEXT]: '张开手掌继续抽下一张 · 或点「继续」',
   [PHASE.COMPLETE]: '牌阵已满 · 点卡翻开细看，或再抽一次',
 };
 
-const ASSET_V = '19';
+const ASSET_V = '20';
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
@@ -67,7 +69,10 @@ function wait(ms) {
 }
 
 function windowedCount() {
-  return window.innerWidth >= 768 ? 10 : 8;
+  const w = window.innerWidth || 600;
+  if (w < 500) return 7;
+  if (w < 780) return 8;
+  return 10;
 }
 
 /** @type {null|{showScreen:Function, closeSheet:Function}} */
@@ -87,6 +92,7 @@ const gState = {
   stream: null,
   engine: null,
   spinAngle: 0,
+  radius: 260,
   velocity: 0,
   friction: 0.92,
   animating: false,
@@ -159,6 +165,7 @@ function updateProgress() {
       (i < filled ? ' done' : i === next ? ' active' : '');
     segs.appendChild(s);
   }
+  renderDrawnStrip();
   const label = $('#gesture-pos-label');
   if (label) {
     if (next >= 0 && gState.positions[next]) {
@@ -189,19 +196,23 @@ function resetRound(count) {
   updateProgress();
   $('#gesture-stage')?.classList.remove('is-complete');
   $('#gesture-reveal')?.classList.remove('show');
-  const head = document.querySelector('.gesture-play-head');
-  if (head) head.hidden = false;
 }
 
 function clearRing() {
   const ring = $('#gesture-ring');
-  if (ring) ring.innerHTML = '';
+  if (ring) {
+    ring.innerHTML = '';
+    ring.style.transform = 'rotateY(0deg)';
+  }
+  const depth = $('#gesture-ring-depth');
+  if (depth) depth.style.transform = 'translateZ(0px)';
   const stack = $('#gesture-stack');
   if (stack) {
     stack.innerHTML = '';
     stack.hidden = true;
+    stack.classList.remove('appear');
   }
-  if (ring) ring.style.transform = 'rotateZ(0deg)';
+  $('#gesture-ring-wrap')?.classList.remove('is-aside');
 }
 
 function clearReveal() {
@@ -218,18 +229,71 @@ function buildRingIds() {
   gState.ringIds = gState.remaining.slice(0, n);
 }
 
-function getRadius() {
-  const w = window.innerWidth;
-  if (w <= 480) return 150;
-  if (w <= 768) return 200;
-  return 260;
+function readCardWidth() {
+  const host = document.querySelector('.gesture-play') || document.documentElement;
+  const raw = parseFloat(getComputedStyle(host).getPropertyValue('--g-card-w'));
+  return Number.isFinite(raw) && raw > 40 ? raw : 220;
 }
 
-function cardTransform(baseAngle, radius, zLift = 0) {
-  const rad = (baseAngle * Math.PI) / 180;
-  const x = Math.sin(rad) * radius;
-  const y = -Math.cos(rad) * radius;
-  return `translate3d(${x}px, ${y}px, ${zLift}px) rotateZ(${baseAngle}deg) rotateX(-78deg)`;
+/** 半径让左右邻卡露出一截，正中牌保持 CSS 尺寸（父级会把圆柱拉回 z=0） */
+function syncCarouselMetrics() {
+  const cardW = readCardWidth();
+  const n = Math.max(3, gState.ringIds.length || windowedCount());
+  const sinHalf = Math.sin(Math.PI / n);
+  const vw = window.innerWidth || 400;
+  const gapRatio = vw < 520 ? 1.22 : vw < 900 ? 1.1 : 1.04;
+  const rChord = (gapRatio * cardW) / (2 * Math.max(0.25, sinHalf));
+  const stageW = $('#gesture-stage')?.clientWidth || vw;
+  const half = Math.max(100, stageW / 2 - 8);
+  const rCap = Math.min(560, half * 0.98 + cardW * 0.55);
+  gState.radius = Math.floor(Math.min(rCap, Math.max(180, rChord)));
+}
+
+function cardTransform(index, lift = 0, scale = 1) {
+  const n = gState.ringIds.length || 1;
+  const angle = (360 / n) * index;
+  const z = (gState.radius || 260) + lift;
+  const sc = scale === 1 ? '' : ` scale(${scale})`;
+  return `rotateY(${angle}deg) translateZ(${z}px)${sc}`;
+}
+
+function renderDrawnStrip() {
+  const wrap = $('#gesture-drawn');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  wrap.dataset.count = String(gState.count || gState.positions.length || 0);
+  const next = gState.drawnSlots.findIndex((s) => s === null);
+  gState.positions.forEach((pos, i) => {
+    const item = gState.drawnSlots[i];
+    const slot = document.createElement('div');
+    slot.className =
+      'gesture-drawn-slot' +
+      (item ? ' is-filled' : ' is-empty') +
+      (i === next ? ' is-current' : '');
+    slot.setAttribute(
+      'aria-label',
+      `${pos.label} · ${item ? item.card.name : '未抽'}`
+    );
+    const thumb = document.createElement('div');
+    thumb.className = 'gesture-drawn-thumb';
+    if (item) {
+      const img = document.createElement('img');
+      img.src = assetUrl(item.card.image);
+      img.alt = item.card.name;
+      img.addEventListener('error', () => img.classList.add('is-broken'));
+      const num = document.createElement('span');
+      num.className = 'gesture-drawn-num';
+      num.textContent = pad2(item.card.id);
+      thumb.appendChild(img);
+      thumb.appendChild(num);
+    }
+    const lab = document.createElement('div');
+    lab.className = 'gesture-drawn-label';
+    lab.textContent = pos.label;
+    slot.appendChild(thumb);
+    slot.appendChild(lab);
+    wrap.appendChild(slot);
+  });
 }
 
 function renderStack() {
@@ -237,13 +301,16 @@ function renderStack() {
   if (!stack) return;
   stack.hidden = false;
   stack.innerHTML = '';
-  for (let i = 0; i < 5; i++) {
+  const n = 7;
+  for (let i = 0; i < n; i++) {
     const el = document.createElement('div');
     el.className = 'gesture-stack-card';
-    el.style.transform = `translate(${i * 1.5}px, ${-i * 2}px) rotate(${(i - 2) * 1.2}deg)`;
+    el.style.transform = `translate(${i * 2.4}px, ${-i * 3.4}px) rotate(${(i - 3) * 1.1}deg)`;
     el.style.zIndex = String(i);
     stack.appendChild(el);
   }
+  stack.classList.remove('appear');
+  void stack.offsetWidth;
   stack.classList.add('appear');
   spawnParticles();
 }
@@ -270,8 +337,8 @@ function renderRing() {
   if (!ring) return;
   if (stack) stack.hidden = true;
   ring.innerHTML = '';
+  syncCarouselMetrics();
   const n = gState.ringIds.length;
-  const radius = getRadius();
   gState.spinAngle = 0;
   gState.velocity = 0;
   gState.focused = false;
@@ -284,8 +351,9 @@ function renderRing() {
     el.className = 'gesture-ring-card';
     el.dataset.index = String(i);
     el.dataset.id = String(id);
-    el.style.transform = cardTransform(angle, radius);
     el.dataset.angle = String(angle);
+    el.style.transition = 'none';
+    el.style.transform = 'rotateY(0deg) translateZ(0px)';
     el.setAttribute('aria-label', '未翻开卡牌');
     el.innerHTML = `<div class="gesture-ring-inner"><div class="gesture-ring-face back"></div></div>`;
     el.addEventListener('click', (e) => {
@@ -297,17 +365,34 @@ function renderRing() {
         if (gState.phase === PHASE.SPREAD) lockFront();
         else if (gState.phase === PHASE.LOCKED) confirmFlip();
       } else {
-        // 点非前方：转到该位
         const step = 360 / n;
-        gState.spinAngle = -i * step;
+        let target = -i * step;
+        let delta = target - gState.spinAngle;
+        while (delta > 180) delta -= 360;
+        while (delta < -180) delta += 360;
+        gState.spinAngle += delta;
         snapToNearest();
         updateSpin();
       }
     });
     ring.appendChild(el);
   });
-  ring.style.transform = `rotateZ(${gState.spinAngle}deg)`;
-  updateFrontCard();
+  updateSpin();
+  requestAnimationFrame(() => {
+    $$('.gesture-ring-card').forEach((el, i) => {
+      el.style.transition = `transform ${0.7 + i * 0.045}s cubic-bezier(0.2, 0.8, 0.2, 1)`;
+      el.style.transform = cardTransform(i);
+    });
+    setTimeout(() => {
+      $$('.gesture-ring-card').forEach((el) => {
+        if (!el.classList.contains('is-locked')) {
+          el.style.transition = 'filter 0.25s ease';
+        }
+      });
+      updateFrontCard(true);
+      updateDepth();
+    }, 1100);
+  });
 }
 
 function getCurrentIndex() {
@@ -319,18 +404,40 @@ function getCurrentIndex() {
 }
 
 function updateSpin() {
+  const depth = $('#gesture-ring-depth');
   const ring = $('#gesture-ring');
-  if (ring) ring.style.transform = `rotateZ(${gState.spinAngle}deg)`;
-  if (gState.phase === PHASE.SPREAD || gState.phase === PHASE.LOCKED) {
+  if (depth) depth.style.transform = `translateZ(${-(gState.radius || 0)}px)`;
+  if (ring) ring.style.transform = `rotateY(${gState.spinAngle}deg)`;
+  if ($$('.gesture-ring-card').length) {
     updateFrontCard();
+    updateDepth();
   }
 }
 
-function updateFrontCard() {
+function relAngle(base) {
+  let rel = base + gState.spinAngle;
+  rel = ((rel % 360) + 360) % 360;
+  if (rel > 180) rel -= 360;
+  return rel;
+}
+
+function updateDepth() {
+  const n = gState.ringIds.length || 1;
+  const limit = n <= 7 ? 78 : 96;
+  $$('.gesture-ring-card').forEach((el) => {
+    const ad = Math.abs(relAngle(Number(el.dataset.angle || 0)));
+    const far = ad > limit;
+    el.classList.toggle('is-far', far);
+    el.classList.toggle('is-side', !far && ad > 18);
+    el.style.visibility = far ? 'hidden' : 'visible';
+  });
+}
+
+function updateFrontCard(force = false) {
   const cards = $$('.gesture-ring-card');
   if (!cards.length) return;
   const idx = getCurrentIndex();
-  if (idx === gState.lastFrontIdx) return;
+  if (!force && idx === gState.lastFrontIdx) return;
   if (gState.lastFrontIdx != null && cards[gState.lastFrontIdx]) {
     cards[gState.lastFrontIdx].classList.remove('is-front');
   }
@@ -387,24 +494,105 @@ function lockFront() {
   cards.forEach((c) => c.classList.remove('is-locked'));
   if (cards[idx]) {
     cards[idx].classList.add('is-locked');
-    const radius = getRadius();
-    const angle = Number(cards[idx].dataset.angle || 0);
-    cards[idx].style.transform = cardTransform(angle, radius, 42);
+    cards[idx].style.transition = 'transform 0.35s ease';
+    cards[idx].style.transform = cardTransform(idx, 48, 1.06);
   }
+  updateDepth();
   setPhase(PHASE.LOCKED);
 }
 
 function unlockFront() {
   if (gState.phase !== PHASE.LOCKED) return;
   gState.focused = false;
-  const cards = $$('.gesture-ring-card');
-  const radius = getRadius();
-  cards.forEach((c) => {
+  $$('.gesture-ring-card').forEach((c, i) => {
     c.classList.remove('is-locked');
-    const angle = Number(c.dataset.angle || 0);
-    c.style.transform = cardTransform(angle, radius, 0);
+    c.style.transition = 'transform 0.35s ease';
+    c.style.transform = cardTransform(i);
   });
+  updateDepth();
   setPhase(PHASE.SPREAD);
+}
+
+function nextFrame() {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+}
+
+function waitForImages(root) {
+  const imgs = [...root.querySelectorAll('img')];
+  return Promise.all(
+    imgs.map(
+      (img) =>
+        new Promise((resolve) => {
+          if (img.complete) {
+            resolve();
+            return;
+          }
+          const done = () => resolve();
+          img.addEventListener('load', done, { once: true });
+          img.addEventListener('error', done, { once: true });
+        })
+    )
+  );
+}
+
+function placeFlipOverlay() {
+  const ov = $('#gesture-flip-overlay');
+  const head = $('#gesture-play-head');
+  if (!ov || !head) return;
+  const bottom = head.getBoundingClientRect().bottom;
+  ov.style.top = `${Math.max(0, Math.round(bottom + 4))}px`;
+}
+
+function blockFits(el, container, pad = 2) {
+  if (!el || !container) return true;
+  const a = el.getBoundingClientRect();
+  const b = container.getBoundingClientRect();
+  if (a.width < 8 || a.height < 8) return false;
+  return a.top >= b.top - pad && a.bottom <= b.bottom + pad;
+}
+
+/** 只滚动翻牌层，避免牌面还没看清就把整页拉走 */
+function scrollInside(container, el) {
+  if (!container || !el || blockFits(el, container)) return;
+  const c = container.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  if (r.bottom > c.bottom) container.scrollTop += r.bottom - c.bottom + 12;
+  const r2 = el.getBoundingClientRect();
+  const c2 = container.getBoundingClientRect();
+  if (r2.top < c2.top) container.scrollTop -= c2.top - r2.top + 12;
+}
+
+function scrollGestureToTop() {
+  const ov = $('#gesture-flip-overlay');
+  if (ov) ov.scrollTop = 0;
+  const screen = document.querySelector('.screen[data-screen="gesture"]');
+  if (screen) screen.scrollTo({ top: 0, behavior: 'smooth' });
+  const root = document.scrollingElement;
+  if (root) root.scrollTo({ top: 0, behavior: 'smooth' });
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
+  $('#gesture-play-head')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  return wait(480);
+}
+
+async function presentFlipUntilReadable(ov) {
+  placeFlipOverlay();
+  await nextFrame();
+  await nextFrame();
+  await waitForImages(ov);
+  await wait(960);
+  ov.classList.add('is-readable');
+  await wait(460);
+  const face = ov.querySelector('.gesture-flip-card');
+  const meta = ov.querySelector('.gesture-flip-meta');
+  scrollInside(ov, face);
+  scrollInside(ov, meta);
+  await wait(80);
+  if (!blockFits(face, ov) || !blockFits(meta, ov)) {
+    scrollInside(ov, face);
+    scrollInside(ov, meta);
+    await wait(80);
+  }
+  await wait(1100);
 }
 
 async function confirmFlip() {
@@ -415,32 +603,35 @@ async function confirmFlip() {
   if (!card) return;
 
   gState.gesturesDisabled = true;
+  gState.velocity = 0;
+  gState.animating = false;
   setPhase(PHASE.FLIPPING);
 
   const ringWrap = $('#gesture-ring-wrap');
-  if (ringWrap) ringWrap.classList.add('dim');
+  if (ringWrap) ringWrap.classList.add('is-aside');
 
   showFlipOverlay(card);
-  await wait(900);
+  const ov = $('#gesture-flip-overlay');
+  if (ov) await presentFlipUntilReadable(ov);
 
-  // 入槽
   const slotIdx = gState.drawnSlots.findIndex((s) => s === null);
   if (slotIdx >= 0) {
     gState.drawnSlots[slotIdx] = { card, flipped: true };
   }
   gState.remaining = gState.remaining.filter((cid) => cid !== id);
+  updateProgress();
 
-  await wait(400);
+  await scrollGestureToTop();
   hideFlipOverlay();
-  if (ringWrap) ringWrap.classList.remove('dim');
+  if (ringWrap) ringWrap.classList.remove('is-aside');
   clearRing();
   gState.focused = false;
   gState.gesturesDisabled = false;
-  updateProgress();
 
   const next = gState.drawnSlots.findIndex((s) => s === null);
   if (next < 0) {
     enterComplete();
+    await scrollGestureToTop();
   } else {
     setPhase(PHASE.WAIT_NEXT);
   }
@@ -449,14 +640,17 @@ async function confirmFlip() {
 function showFlipOverlay(card) {
   const ov = $('#gesture-flip-overlay');
   if (!ov) return;
+  ov.classList.remove('is-readable');
   ov.hidden = false;
+  ov.scrollTop = 0;
+  placeFlipOverlay();
   ov.innerHTML = `
     <div class="gesture-flip-card">
       <div class="gesture-flip-inner">
         <div class="gesture-flip-face back"></div>
         <div class="gesture-flip-face front">
           <img src="${assetUrl(card.image)}" alt="${card.name}"
-               onerror="this.style.display='none'" />
+               onerror="this.classList.add('is-broken')" />
           <span class="gesture-flip-num">${pad2(card.id)}</span>
         </div>
       </div>
@@ -477,9 +671,10 @@ function showFlipOverlay(card) {
 function hideFlipOverlay() {
   const ov = $('#gesture-flip-overlay');
   if (!ov) return;
-  ov.classList.remove('show');
+  ov.classList.remove('show', 'is-readable');
   ov.hidden = true;
   ov.innerHTML = '';
+  ov.style.top = '';
 }
 
 function continueNext() {
@@ -491,8 +686,6 @@ function continueNext() {
 
 function enterComplete() {
   setPhase(PHASE.COMPLETE);
-  const head = document.querySelector('.gesture-play-head');
-  if (head) head.hidden = true;
   $('#gesture-stage')?.classList.add('is-complete');
   renderGestureReveal();
   $('#gesture-reveal')?.classList.add('show');
@@ -794,8 +987,6 @@ function again() {
   updateProgress();
   $('#gesture-reveal')?.classList.remove('show');
   $('#gesture-stage')?.classList.remove('is-complete');
-  const head = document.querySelector('.gesture-play-head');
-  if (head) head.hidden = false;
 }
 
 export function initGestureMode(helpers) {
@@ -827,20 +1018,18 @@ export function initGestureMode(helpers) {
   $('#gesture-btn-back')?.addEventListener('click', leaveToHome);
   $('#gesture-btn-again')?.addEventListener('click', again);
   $('#gesture-btn-to-normal')?.addEventListener('click', leaveToHome);
-  $('#gesture-btn-cam-toggle')?.addEventListener('click', () => {
-    $('#gesture-cam-panel')?.classList.toggle('collapsed');
-  });
 
   initRingDrag();
   window.addEventListener('resize', () => {
+    if (gState.phase === PHASE.FLIPPING) placeFlipOverlay();
     if (gState.phase === PHASE.SPREAD || gState.phase === PHASE.LOCKED) {
-      const cards = $$('.gesture-ring-card');
-      const radius = getRadius();
-      cards.forEach((c) => {
-        const angle = Number(c.dataset.angle || 0);
-        const lift = c.classList.contains('is-locked') ? 42 : 0;
-        c.style.transform = cardTransform(angle, radius, lift);
+      syncCarouselMetrics();
+      $$('.gesture-ring-card').forEach((c, i) => {
+        const locked = c.classList.contains('is-locked');
+        c.style.transition = 'none';
+        c.style.transform = cardTransform(i, locked ? 48 : 0, locked ? 1.06 : 1);
       });
+      updateSpin();
     }
   });
 

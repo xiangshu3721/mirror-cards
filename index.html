@@ -8,8 +8,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>镜像神通卡 · 深度觉察</title>
-  <link rel="stylesheet" href="css/app.css?v=19" />
-  <link rel="stylesheet" href="css/gesture.css?v=19" />
+  <link rel="stylesheet" href="css/app.css?v=20" />
+  <link rel="stylesheet" href="css/gesture.css?v=20" />
 </head>
 <body>
   <div class="app" id="app">
@@ -176,7 +176,7 @@
         <div class="gesture-panel gesture-welcome active" data-panel="welcome">
           <p class="kicker">隔空觉察</p>
           <h2 class="serif">手势仪式</h2>
-          <p class="desc">握拳召唤，张掌展环，挥手选牌，捏合翻开。<br />摄像头仅在本地识别，视频不会上传。</p>
+          <p class="desc">握拳召唤，张掌展开，挥手选牌，捏合翻开。<br />摄像头只在本地识别，画面不会出现，也不会上传。</p>
           <div class="gesture-count-row" role="group" aria-label="张数">
             <button type="button" class="gesture-count-chip" data-count="1"><span>单张</span><span class="sub">凝视</span></button>
             <button type="button" class="gesture-count-chip selected" data-count="3"><span>三张</span><span class="sub">来处·今处·往处</span></button>
@@ -184,14 +184,14 @@
           </div>
           <div class="actions">
             <button type="button" class="btn btn-primary btn-block" id="gesture-btn-open-cam">开启手势仪式</button>
-            <button type="button" class="btn btn-ghost btn-block" id="gesture-btn-touch-only">无摄像头 · 触屏拖环</button>
+            <button type="button" class="btn btn-ghost btn-block" id="gesture-btn-touch-only">无摄像头 · 触屏转牌</button>
           </div>
           <p class="gesture-status" id="gesture-status"></p>
           <ul class="gesture-hint-list">
             <li>握拳 → 召唤牌堆</li>
-            <li>张掌 → 展开圆环</li>
-            <li>挥手／拖拽 → 转环（松手有惯性吸附）</li>
-            <li>食指 → 锁定前方卡 · 捏合翻开</li>
+            <li>张掌 → 展开居中牌阵</li>
+            <li>挥手／拖拽 → 转牌，正中主卡最大</li>
+            <li>食指 → 锁定正中卡 · 捏合翻开</li>
             <li>无摄像头时按钮与拖拽可完整走完</li>
           </ul>
         </div>
@@ -205,7 +205,8 @@
 
         <!-- Play -->
         <div class="gesture-panel gesture-play" data-panel="play">
-          <div class="gesture-play-head">
+          <div class="gesture-play-head" id="gesture-play-head">
+            <div class="gesture-drawn" id="gesture-drawn" aria-label="已抽卡牌"></div>
             <div class="gesture-progress" id="gesture-progress" hidden></div>
             <div class="gesture-pos-label" id="gesture-pos-label" hidden></div>
           </div>
@@ -214,7 +215,9 @@
             <div class="gesture-platform" aria-hidden="true"></div>
             <div class="gesture-stack" id="gesture-stack" hidden></div>
             <div class="gesture-ring-wrap" id="gesture-ring-wrap">
-              <div class="gesture-ring" id="gesture-ring"></div>
+              <div class="gesture-ring-depth" id="gesture-ring-depth">
+                <div class="gesture-ring" id="gesture-ring"></div>
+              </div>
             </div>
             <div class="gesture-flip-overlay" id="gesture-flip-overlay" hidden></div>
           </div>
@@ -239,10 +242,8 @@
           </div>
         </div>
 
-        <div class="gesture-cam-panel" id="gesture-cam-panel">
-          <video id="gesture-video" playsinline muted autoplay></video>
-          <button type="button" class="cam-toggle" id="gesture-btn-cam-toggle">摄像头画面</button>
-        </div>
+        <!-- 摄像头流只给 MediaPipe，不渲染预览窗 -->
+        <video id="gesture-video" class="gesture-cam-sink" playsinline muted autoplay aria-hidden="true"></video>
       </div>
     </section>
 
@@ -269,6 +270,6 @@
     </div>
   </aside>
 
-  <script type="module" src="js/app.js?v=19"></script>
+  <script type="module" src="js/app.js?v=20"></script>
 </body>
 </html>
